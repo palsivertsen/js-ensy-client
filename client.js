@@ -1,6 +1,9 @@
 'use strict';
 
 const mqtt = require('async-mqtt');
+const FanSpeed_low = '1';
+const FanSpeed_normal = '2';
+const FanSpeed_high = '3';
 
 class Client {
 
@@ -76,6 +79,13 @@ class Client {
   removeHandler(name) {
     this.#messageHandlers.delete(name);
   }
+
+  async setFanSpeed(speed) {
+    if (speed <= 0 || speed > 3) {
+      throw new Error(`invalid speed: ${speed}`);
+    }
+    await this.#client.publish(`units/${this.#unitId}/app/fan`, speed);
+  }
 }
 
 const regexpMac = /^[a-fA-F0-9]{12}$/g;
@@ -84,4 +94,7 @@ function validateMac(mac) {
   return regexpMac.test(mac);
 }
 
-module.exports = Client;
+exports.Client = Client;
+exports.FanSpeed_low = FanSpeed_low;
+exports.FanSpeed_normal = FanSpeed_normal;
+exports.FanSpeed_high = FanSpeed_high;
