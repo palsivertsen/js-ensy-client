@@ -1,7 +1,10 @@
 {
   "name": "ensy-client",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A client for interacting with ventilation units through ensy.no",
+  "files": [
+    "client.mjs"
+  ],
   "browser": "client.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
