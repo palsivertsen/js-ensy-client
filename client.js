@@ -1,6 +1,6 @@
 'use strict';
 
-import { connect } from 'async-mqtt';
+const mqtt = require('async-mqtt');
 
 class Client {
 
@@ -14,7 +14,7 @@ class Client {
     }
     this.#unitId = unitId;
 
-    this.#client = connect(
+    this.#client = mqtt.connect(
       'ws://app.ensy.no:9001/mqtt',
       {
         clientId: `js-ensy-client_${Math.random().toString(16).substr(2, 8)}`,
@@ -84,4 +84,4 @@ function validateMac(mac) {
   return regexpMac.test(mac);
 }
 
-export { Client };
+module.exports = Client;

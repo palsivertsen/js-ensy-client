@@ -1,6 +1,6 @@
 {
   "name": "ensy-client",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A client for interacting with ventilation units through ensy.no",
   "files": [
     "client.mjs"
