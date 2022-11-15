@@ -87,8 +87,8 @@ class Client {
     await this.#client.publish(`units/${this.#unitId}/app/fan`, speed);
   }
 
-  async setOnOffState(on) {
-    await this.#client.publish(`units/${this.#unitId}/app/absent`, on ? 0 : 1);
+  async setAbsent(num) {
+    await this.#client.publish(`units/${this.#unitId}/app/absent`, num);
   }
 }
 
