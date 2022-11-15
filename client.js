@@ -90,6 +90,10 @@ class Client {
   async setAbsent(num) {
     await this.#client.publish(`units/${this.#unitId}/app/absent`, num);
   }
+
+  async setTargetTemperature(num) {
+    await this.#client.publish(`units/${this.#unitId}/app/temerature`, num);
+  }
 }
 
 const regexpMac = /^[a-fA-F0-9]{12}$/g;
