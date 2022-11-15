@@ -39,7 +39,7 @@ class Client {
       const name = words[3];
 
       if (this.#messageHandlers.has(name)) {
-        this.#messageHandlers.get(name)(msg);
+        this.#messageHandlers.get(name)(msg.toString());
       }
     });
   }
