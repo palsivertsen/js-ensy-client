@@ -56,8 +56,8 @@ class Client {
    * * countdown: 240
    * * d2: 0
    * * party: 2
-   * * ro: 1
-   * * he: 0
+   * * ro: 1 // Exchanger ??
+   * * he: 0 // Heating element
    * * absent: 0
    * * kv: 0
    * * asf: 0
@@ -85,6 +85,10 @@ class Client {
       throw new Error(`invalid speed: ${speed}`);
     }
     await this.#client.publish(`units/${this.#unitId}/app/fan`, speed);
+  }
+
+  async setOnOffState(on) {
+    await this.#client.publish(`units/${this.#unitId}/app/absent`, on ? 0 : 1);
   }
 }
 
