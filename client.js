@@ -92,7 +92,7 @@ class Client {
   }
 
   async setTargetTemperature(num) {
-    await this.#client.publish(`units/${this.#unitId}/app/temerature`, num);
+    await this.#client.publish(`units/${this.#unitId}/app/temperature`, num);
   }
 }
 
