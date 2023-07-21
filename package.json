@@ -6,9 +6,7 @@
     "client.js"
   ],
   "main": "client.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/palsivertsen/js-ensy-client.git"
@@ -24,6 +22,7 @@
   },
   "homepage": "https://github.com/palsivertsen/js-ensy-client#readme",
   "dependencies": {
+    "@types/node": "^20.4.3",
     "async-mqtt": "^2.6.2"
   }
 }

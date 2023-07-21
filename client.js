@@ -1,108 +1,143 @@
-'use strict';
+import mqtt from "async-mqtt";
+import { EventEmitter } from "node:events";
 
-const mqtt = require('async-mqtt');
-const FanSpeed_low = '1';
-const FanSpeed_normal = '2';
-const FanSpeed_high = '3';
+const regexpMacAddress = /^[a-f0-9]{12}$/g;
 
-class Client {
-
+export default class Client {
   #unitId;
   #client;
-  #messageHandlers;
+  #eventEmitter;
 
   constructor(unitId) {
-    if (!validateMac(unitId)) {
-      throw new Error(`Invalid unit id "${unitId}"`);
+    if (!regexpMacAddress.test(unitId)) {
+      throw new Error(
+        `unit id should be a lowercase hexadecimal number with length 12, got: '${unitId}'`
+      );
     }
+
     this.#unitId = unitId;
 
-    this.#client = mqtt.connect(
-      'ws://app.ensy.no:9001/mqtt',
-      {
-        clientId: `js-ensy-client_${Math.random().toString(16).substr(2, 8)}`,
-      },
-    );
-
-    this.#client.on('connect', () => {
-      this.#client.subscribe(`units/${this.#unitId}/unit/#`);
+    this.#client = mqtt.connect("ws://app.ensy.no:9001/mqtt", {
+      clientId: `js-ensy-client_${Math.random().toString(16).substr(2, 8)}`,
     });
 
-    this.#messageHandlers = new Map();
-    this.#client.on('message', (topic, msg) => {
-      // console.log(`New message from ${topic}: ${msg.toString()}`);
-      const words = topic.split('/');
-      if (words.length !== 4) {
+    this.#client.on("connect", () => {
+      this.#client.subscribe(`units/${this.#unitId}/unit/+`);
+    });
+
+    this.#eventEmitter = new EventEmitter();
+    this.#client.on("message", (topic, message) => {
+      const topicTokens = topic.split("/");
+      if (topicTokens.length !== 4) {
         throw new Error(`Unsupported topic: ${topic}`);
       }
 
-      const name = words[3];
-
-      if (this.#messageHandlers.has(name)) {
-        this.#messageHandlers.get(name)(msg.toString());
-      }
+      const eventName = topicTokens[3];
+      const messageString = message.toString();
+      this.#eventEmitter.emit(eventName, messageString);
     });
+  }
+
+  addListener(eventName, listener) {
+    this.#eventEmitter.addListener(eventName, listener);
   }
 
   async end() {
     return await this.#client.end();
   }
 
-  /*
-   * Known events:
-   * * status: online
-   * * temperature: 20
-   * * fan: 2
-   * * countdown: 240
-   * * d2: 0
-   * * party: 2
-   * * ro: 1 // Exchanger ??
-   * * he: 0 // Heating element
-   * * absent: 0
-   * * kv: 0
-   * * asf: 0
-   * * aef: 0
-   * * ao: 0
-   * * altsa: 0
-   * * rm: 0
-   * * fa: 0
-   * * tsupl: 20
-   * * textr: 25
-   * * tout: 12
-   * * overheating: 20
-   * * texauh: 2
+  async setRaw(action, value) {
+    await this.#client.publish(`units/${this.#unitId}/app/${action}`, value);
+  }
+
+  /**
+   * Set absent
+   * @param {string} num "0" to disable, "1" to enable
    */
-  setHandler(name, hand) {
-    this.#messageHandlers.set(name, hand);
+  async setAbsent(num) {
+    await this.setRaw(Actions.Absent, num);
   }
 
-  removeHandler(name) {
-    this.#messageHandlers.delete(name);
+  /**
+   * Set countdown for party mode
+   * @param {string} minutes Number of minutes
+   */
+  async setCountdown(minutes) {
+    await this.setRaw(Actions.Countdown, minutes);
   }
 
+  /**
+   * Set speed of fan
+   * @param {string} speed "1", "2", or "3"
+   */
   async setFanSpeed(speed) {
     if (speed <= 0 || speed > 3) {
       throw new Error(`invalid speed: ${speed}`);
     }
-    await this.#client.publish(`units/${this.#unitId}/app/fan`, speed);
+    await this.setRaw(Actions.FanSpeed, speed);
   }
 
-  async setAbsent(num) {
-    await this.#client.publish(`units/${this.#unitId}/app/absent`, num);
+  /**
+   * Set party mode
+   * @param {string} mode "1" for start and "2" for stop
+   */
+  async setPartyMode(mode) {
+    await this.setRaw(Actions.Party, mode);
   }
 
-  async setTargetTemperature(num) {
-    await this.#client.publish(`units/${this.#unitId}/app/temperature`, num);
+  /**
+   * Set target temperature
+   * @param {string} temperatureC Temperature in Celcius
+   */
+  async setTemperature(temperatureC) {
+    await this.setRaw(Actions.Temperature, temperatureC);
   }
 }
 
-const regexpMac = /^[a-fA-F0-9]{12}$/g;
+export class Events {
+  static Absent = new Events("absent");
+  static AlarmExtractFan = new Events("aef");
+  static AlarmLowTemperatureSupplyAir = new Events("altsa");
+  static AlarmOverheating = new Events("ao");
+  static AlarmSupplyFan = new Events("asf");
+  static Countdown = new Events("countdown");
+  static FanSpeed = new Events("fan");
+  static FilterAlarm = new Events("fa");
+  static HeatExchanger = new Events("ro");
+  static HeatingElement = new Events("he");
+  static HumiditySensor = new Events("d2");
+  static KitchenVentilator = new Events("kv");
+  static Overheating = new Events("overheating");
+  static Party = new Events("party");
+  static RotorMalfunction = new Events("rm");
+  static Status = new Events("status");
+  static TemeratureExhaustAir = new Events("texauh");
+  static Temperature = new Events("temperature");
+  static TemperatureExtractAir = new Events("textr");
+  static TemperatureOutsideAir = new Events("tout");
+  static TemperatureSupplyAir = new Events("tsupl");
 
-function validateMac(mac) {
-  return regexpMac.test(mac);
+  constructor(name) {
+    this.name = name;
+  }
+
+  toString() {
+    return this.name;
+  }
 }
 
-exports.Client = Client;
-exports.FanSpeed_low = FanSpeed_low;
-exports.FanSpeed_normal = FanSpeed_normal;
-exports.FanSpeed_high = FanSpeed_high;
+export class Actions {
+  static Absent = new Actions("absent");
+  static Countdown = new Actions("countdown");
+  static FanSpeed = new Actions("fan");
+  static Party = new Actions("party");
+  static Temperature = new Actions("temperature");
+
+  constructor(name) {
+    this.name = name;
+  }
+
+  toString() {
+    return this.name;
+  }
+}
